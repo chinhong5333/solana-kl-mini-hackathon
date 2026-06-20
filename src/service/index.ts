@@ -5,11 +5,16 @@ import { getConnection } from "../lib/solana/connection";
 import { getSolBalance, loadWallet } from "../lib/solana/wallet";
 import { splitFunds, type Recipient, type SplitResult } from "../lib/solana/split";
 import { transferFunds } from "../lib/solana/transfer";
-import { withStateLock } from "../lib/state/lock";
+import { resolveDevice, withStateLock } from "../lib/state/lock";
 import { loadState, saveState } from "../lib/state/store";
 import type { AppState } from "../lib/types";
 
 const msg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+// Which device this caller drives (CLI/MCP: WALLET_DEVICE_ID or "local"; web:
+// the gid cookie). Set WALLET_DEVICE_ID to a web device id to bind the CLI/MCP
+// to that browser's wallet.
+export const whoAmI = () => resolveDevice().then((d) => ({ deviceId: d.deviceId }));
 
 // Read the wallet address + live devnet SOL balance for the current device.
 // For non-web callers (CLI/MCP) withStateLock auto-provisions the "local" wallet.

@@ -1,5 +1,6 @@
 import { getConnection } from "@/lib/solana/connection";
 import { getSolBalance, getTokenBalances, loadWallet } from "@/lib/solana/wallet";
+import { currentDeviceId } from "@/lib/runtime/context";
 import { withStateLock } from "@/lib/state/lock";
 import { loadState, saveState } from "@/lib/state/store";
 
@@ -31,6 +32,8 @@ export async function GET() {
     } catch {
       // no wallet provisioned for this device yet; return state as-is
     }
-    return Response.json(s);
+    // Expose this browser's device id (gid). Set WALLET_DEVICE_ID to it to make
+    // the CLI / MCP drive this same wallet.
+    return Response.json({ ...s, deviceId: currentDeviceId() });
   });
 }

@@ -14,8 +14,11 @@ const USAGE = `wallet commands:
   status                show wallet address + live SOL balance
   transfer <to> <amt> [token]  send SOL or a token to one recipient (token: SOL|USDC|<mint>)
   split                 multi-transfer SOL or an SPL token to many recipients in one tx
+  device                show which device id this CLI drives (set WALLET_DEVICE_ID to bind it to a web wallet)
   help                  show this help
   exit                  leave the interactive shell
+
+  --rpc <url>           use this RPC endpoint for the run (overrides SOLANA_RPC_URL / the default)
 
   split usage:
     split <addr>:<amount> [<addr>:<amount> ...]            # native SOL
@@ -72,6 +75,9 @@ async function run(cmd: string, args: string[] = []): Promise<void> {
       out(await svc.split(recipients, mint));
       break;
     }
+    case "device":
+      out(await svc.whoAmI());
+      break;
     case "help":
     case "":
       console.log(USAGE);
@@ -85,7 +91,7 @@ async function run(cmd: string, args: string[] = []): Promise<void> {
 // Interactive shell: read a command per line until "exit"/"quit" or EOF.
 async function repl(): Promise<void> {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout, prompt: "wallet> " });
-  console.log('wallet shell. commands: create, status, transfer, split, help, exit.');
+  console.log('wallet shell. commands: create, status, transfer, split, device, help, exit.');
   rl.prompt();
   for await (const line of rl) {
     const [cmd, ...args] = line.trim().split(/\s+/);
@@ -102,8 +108,24 @@ async function repl(): Promise<void> {
   rl.close();
 }
 
+// Pull a global "--rpc <url>" out of argv (anywhere) and point this run's
+// connection at it via SOLANA_RPC_URL. Returns argv without the flag.
+function extractRpc(argv: string[]): string[] {
+  const rest: string[] = [];
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--rpc") {
+      const url = argv[++i];
+      if (!url) throw new Error("--rpc requires a URL");
+      process.env.SOLANA_RPC_URL = url;
+      continue;
+    }
+    rest.push(argv[i]);
+  }
+  return rest;
+}
+
 async function main() {
-  const [cmd, ...args] = process.argv.slice(2);
+  const [cmd, ...args] = extractRpc(process.argv.slice(2));
   if (cmd) {
     await run(cmd, args);
   } else {

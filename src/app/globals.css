@@ -1,23 +1,46 @@
+/* Theme tokens. Light is the :root default; dark applies either when the OS
+   prefers dark (and the user hasn't forced light) or when data-theme="dark" is
+   set explicitly by the toggle. data-theme="light" forces light. */
 :root {
-  color-scheme: light dark;
-  --bg: #0b0b10;
-  --surface: #15151d;
-  --border: #262633;
-  --text: #ededf2;
-  --muted: #9a9aa8;
+  color-scheme: light;
+  --bg: #f7f7fb;
+  --surface: #ffffff;
+  --border: #e6e6ee;
+  --text: #1b1b22;
+  --muted: #5b5b68;
   --accent: #7c5cff;
   --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #f7f7fb;
-    --surface: #ffffff;
-    --border: #e6e6ee;
-    --text: #1b1b22;
-    --muted: #5b5b68;
+/* Dark tokens, shared by the OS-dark default and the explicit dark toggle. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0b0b10;
+    --surface: #15151d;
+    --border: #262633;
+    --text: #ededf2;
+    --muted: #9a9aa8;
   }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b0b10;
+  --surface: #15151d;
+  --border: #262633;
+  --text: #ededf2;
+  --muted: #9a9aa8;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f7f7fb;
+  --surface: #ffffff;
+  --border: #e6e6ee;
+  --text: #1b1b22;
+  --muted: #5b5b68;
 }
 
 * {
@@ -32,6 +55,7 @@ body {
   color: var(--text);
   font-family: var(--sans);
   -webkit-font-smoothing: antialiased;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 a {
@@ -44,4 +68,40 @@ a:hover {
 
 code {
   font-family: var(--mono);
+}
+
+/* Theme-toggle label: pure-CSS, always matches the applied theme.
+   Light mode offers "Dark"; dark mode offers "Light". */
+.theme-toggle .to-light {
+  display: none;
+}
+.theme-toggle .to-dark {
+  display: inline;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-toggle .to-light {
+    display: inline;
+  }
+  :root:not([data-theme="light"]) .theme-toggle .to-dark {
+    display: none;
+  }
+}
+:root[data-theme="dark"] .theme-toggle .to-light {
+  display: inline;
+}
+:root[data-theme="dark"] .theme-toggle .to-dark {
+  display: none;
+}
+:root[data-theme="light"] .theme-toggle .to-light {
+  display: none;
+}
+:root[data-theme="light"] .theme-toggle .to-dark {
+  display: inline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html,
+  body {
+    transition: none;
+  }
 }

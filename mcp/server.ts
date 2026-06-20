@@ -9,6 +9,17 @@ import * as svc from "../src/service/index";
 const server = new McpServer({ name: "solhakathon-wallet", version: "0.1.0" });
 const ok = (d: unknown) => ({ content: [{ type: "text" as const, text: JSON.stringify(d, null, 2) }] });
 
+// Optional per-call RPC override. Set SOLANA_RPC_URL so the shared getConnection
+// picks it up; omitted => SOLANA_RPC_URL / the default endpoint.
+const rpcUrlField = z
+  .string()
+  .url()
+  .optional()
+  .describe("RPC endpoint to use for this call. Overrides SOLANA_RPC_URL / the default.");
+const useRpc = (rpcUrl?: string) => {
+  if (rpcUrl) process.env.SOLANA_RPC_URL = rpcUrl;
+};
+
 const splitShape = {
   recipients: z
     .array(z.object({ address: z.string(), amount: z.number().positive() }))
@@ -18,6 +29,7 @@ const splitShape = {
     .string()
     .optional()
     .describe("SPL token mint to split. Omit (or 'SOL') to split native SOL instead."),
+  rpcUrl: rpcUrlField,
 };
 
 server.registerTool(
@@ -28,8 +40,14 @@ server.registerTool(
 
 server.registerTool(
   "wallet_status",
-  { description: "Read the wallet address and live devnet SOL balance." },
-  async () => ok(await svc.getState()),
+  {
+    description: "Read the wallet address and live devnet SOL balance.",
+    inputSchema: { rpcUrl: rpcUrlField },
+  },
+  async ({ rpcUrl }) => {
+    useRpc(rpcUrl);
+    return ok(await svc.getState());
+  },
 );
 
 server.registerTool(
@@ -44,9 +62,13 @@ server.registerTool(
         .string()
         .optional()
         .describe("Token to send: 'SOL' (default), 'USDC', or an SPL mint address."),
+      rpcUrl: rpcUrlField,
     },
   },
-  async ({ to, amount, mint }) => ok(await svc.sendFunds(to, amount, mint)),
+  async ({ to, amount, mint, rpcUrl }) => {
+    useRpc(rpcUrl);
+    return ok(await svc.sendFunds(to, amount, mint));
+  },
 );
 
 server.registerTool(
@@ -56,7 +78,10 @@ server.registerTool(
       "Multi-transfer from this wallet to many recipients in one transaction. Omit `mint` to split native SOL; pass an SPL mint to split that token (recipient ATAs are auto-created). Amounts are UI units.",
     inputSchema: splitShape,
   },
-  async ({ recipients, mint }) => ok(await svc.split(recipients, mint)),
+  async ({ recipients, mint, rpcUrl }) => {
+    useRpc(rpcUrl);
+    return ok(await svc.split(recipients, mint));
+  },
 );
 
 async function main() {

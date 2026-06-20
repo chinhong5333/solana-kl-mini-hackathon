@@ -3,12 +3,16 @@
 import { useCallback, useEffect, useState } from "react";
 
 type TokenBalance = { mint: string; amount: number; decimals: number };
-type AppState = { wallet: { publicKey: string; solBalance: number; tokens?: TokenBalance[] } };
+type AppState = {
+  wallet: { publicKey: string; solBalance: number; tokens?: TokenBalance[] };
+  deviceId?: string | null;
+};
 
 export default function WalletCreator({ refreshSignal = 0 }: { refreshSignal?: number }) {
   const [publicKey, setPublicKey] = useState("");
   const [balance, setBalance] = useState(0);
   const [tokens, setTokens] = useState<TokenBalance[]>([]);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [note, setNote] = useState("");
 
@@ -24,6 +28,7 @@ export default function WalletCreator({ refreshSignal = 0 }: { refreshSignal?: n
       setPublicKey(s.wallet.publicKey);
       setBalance(s.wallet.solBalance);
       setTokens(s.wallet.tokens ?? []);
+      setDeviceId(s.deviceId ?? null);
     } catch {
       if (!quiet) setNote("Could not refresh balance (RPC error). Try again.");
     } finally {
@@ -116,6 +121,17 @@ export default function WalletCreator({ refreshSignal = 0 }: { refreshSignal?: n
               View on explorer
             </a>
           </div>
+
+          {deviceId && (
+            <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+              <div style={{ fontSize: 13, color: "var(--muted)" }}>Device ID</div>
+              <code style={{ wordBreak: "break-all", fontSize: 13 }}>{deviceId}</code>
+              <p style={{ color: "var(--muted)", margin: "6px 0 0", fontSize: 12 }}>
+                Run the CLI or MCP against this same wallet with{" "}
+                <code>WALLET_DEVICE_ID={deviceId}</code>.
+              </p>
+            </div>
+          )}
         </div>
       ) : (
         <button onClick={createWallet} disabled={loading} style={btn(true)}>

@@ -1,5 +1,10 @@
 export const NETWORK = "devnet" as const;
 
+// Default devnet RPC endpoint. SOLANA_RPC_URL overrides it (web, CLI, MCP all
+// read the same getConnection). The CLI also takes --rpc, the stdio MCP an
+// rpcUrl param; both set SOLANA_RPC_URL so this default is the fallback.
+export const DEFAULT_RPC_URL = "https://devnet.helius-rpc.com/?api-key=322c81d3-4d15-4d81-8128-a482cd57d768";
+
 export const EXPLORER_ADDR = (addr: string) =>
   `https://explorer.solana.com/address/${addr}?cluster=devnet`;
 

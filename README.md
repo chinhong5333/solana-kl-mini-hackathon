@@ -57,7 +57,14 @@ Import shared code via the `@/...` alias instead of long relative paths.
 
 ## CLI and MCP
 
-The web app, the CLI, and the MCP server all call the same `src/service/` layer, so behavior is identical across them. The CLI and MCP run as a single local "device" (wallet keyed by `WALLET_DEVICE_ID`, default `local`).
+The web app, the CLI, and the MCP server all call the same `src/service/` layer, so behavior is identical across them. The CLI and MCP run as a single local "device" (wallet keyed by `WALLET_DEVICE_ID`, default `local`), which is a **different wallet** from any browser's (each browser gets its own per-`gid` wallet).
+
+To make the CLI/MCP drive the **same wallet as a browser**, copy that browser's **Device ID** (shown on the Wallet card after you create a wallet) and set `WALLET_DEVICE_ID` to it:
+
+```bash
+WALLET_DEVICE_ID=<gid-from-web> npm run cli -- status   # same wallet as that browser
+npm run cli -- device                                   # print which device the CLI is bound to
+```
 
 ```bash
 npm run cli -- create                       # provision the local wallet (instant; unfunded)
@@ -66,7 +73,16 @@ npm run cli -- transfer <address> 0.1        # send SOL to one recipient
 npm run cli -- transfer <address> 1.5 USDC   # send USDC (or any SPL mint) to one recipient
 ```
 
-It is a one-shot command runner (it runs the command and exits), not a prompt. Run `npm run cli` with no command to open an interactive shell instead (type `create` / `status` / `transfer` / `split`, `exit` to quit).
+It is a one-shot command runner (it runs the command and exits), not a prompt. Run `npm run cli` with no command to open an interactive shell instead (type `create` / `status` / `transfer` / `split` / `device`, `exit` to quit).
+
+**RPC endpoint.** All three surfaces share one `getConnection()`, which defaults to the Helius devnet endpoint (`DEFAULT_RPC_URL` in `src/lib/config.ts`). Override it with the `SOLANA_RPC_URL` env var, the CLI `--rpc <url>` flag, or the MCP tools' `rpcUrl` param:
+
+```bash
+SOLANA_RPC_URL=https://api.devnet.solana.com npm run cli -- status   # env (works through npm)
+npx tsx cli/wallet.ts --rpc https://api.devnet.solana.com status     # --rpc flag (invoke the CLI directly)
+```
+
+`npm run` strips unknown `--flags`, so use the env var with `npm run`, or pass `--rpc` when invoking `cli/wallet.ts` directly.
 
 The MCP server exposes `wallet_create`, `wallet_status`, `wallet_transfer`, and `wallet_split` two ways, both sharing `src/service/`:
 
@@ -104,7 +120,8 @@ Copy `.env.example` to `.env.local`. `.env*.local` is gitignored. Browser-expose
 
 | Var | When | Purpose |
 |---|---|---|
-| `SOLANA_RPC_URL` | optional | Override the devnet RPC endpoint |
+| `SOLANA_RPC_URL` | optional | Override the devnet RPC endpoint (default: Helius, see `DEFAULT_RPC_URL`) |
+| `WALLET_DEVICE_ID` | optional | Device id the CLI/MCP drive (default `local`); set to a browser's Device ID to share its wallet |
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | prod | Enable Vercel KV (else local file fallback) |
 | `WALLET_MASTER_KEY` | prod (required with KV) | Encrypts wallet secrets at rest (AES-256-GCM) |
 
