@@ -1,6 +1,4 @@
-# Solhakathon
-
-Team base Next.js app. Shared, Vercel-ready foundation for the hackathon. Ships with **Solana devnet wallet creation** (one custodial wallet per browser, KV-backed) as the starting feature.
+# SolSplit
 
 ## Stack
 
@@ -75,7 +73,7 @@ npm run cli -- transfer <address> 1.5 USDC   # send USDC (or any SPL mint) to on
 
 It is a one-shot command runner (it runs the command and exits), not a prompt. Run `npm run cli` with no command to open an interactive shell instead (type `create` / `status` / `transfer` / `split` / `device`, `exit` to quit).
 
-**RPC endpoint.** All three surfaces share one `getConnection()`, which defaults to the Helius devnet endpoint (`DEFAULT_RPC_URL` in `src/lib/config.ts`). Override it with the `SOLANA_RPC_URL` env var, the CLI `--rpc <url>` flag, or the MCP tools' `rpcUrl` param:
+**RPC endpoint.** All three surfaces share one `getConnection()`, which reads `SOLANA_RPC_URL` and falls back to the public devnet endpoint (`DEFAULT_RPC_URL` in `src/lib/config.ts`, rate-limited). Set `SOLANA_RPC_URL` in `.env.local` to a dedicated provider (e.g. Helius) for throughput; web (Next), CLI, and MCP all load it (CLI/MCP via `--env-file-if-exists=.env.local`). You can also override per-run with the CLI `--rpc <url>` flag or the MCP tools' `rpcUrl` param:
 
 ```bash
 SOLANA_RPC_URL=https://api.devnet.solana.com npm run cli -- status   # env (works through npm)
@@ -120,7 +118,7 @@ Copy `.env.example` to `.env.local`. `.env*.local` is gitignored. Browser-expose
 
 | Var | When | Purpose |
 |---|---|---|
-| `SOLANA_RPC_URL` | optional | Override the devnet RPC endpoint (default: Helius, see `DEFAULT_RPC_URL`) |
+| `SOLANA_RPC_URL` | recommended | Devnet RPC endpoint (default: public devnet, rate-limited; set a provider like Helius). Loaded by web, CLI, and MCP. |
 | `WALLET_DEVICE_ID` | optional | Device id the CLI/MCP drive (default `local`); set to a browser's Device ID to share its wallet |
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | prod | Enable Vercel KV (else local file fallback) |
 | `WALLET_MASTER_KEY` | prod (required with KV) | Encrypts wallet secrets at rest (AES-256-GCM) |

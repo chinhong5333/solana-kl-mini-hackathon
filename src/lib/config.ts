@@ -1,9 +1,14 @@
 export const NETWORK = "devnet" as const;
 
-// Default devnet RPC endpoint. SOLANA_RPC_URL overrides it (web, CLI, MCP all
-// read the same getConnection). The CLI also takes --rpc, the stdio MCP an
-// rpcUrl param; both set SOLANA_RPC_URL so this default is the fallback.
-export const DEFAULT_RPC_URL = "https://devnet.helius-rpc.com/?api-key=322c81d3-4d15-4d81-8128-a482cd57d768";
+// Devnet RPC fallback used only when SOLANA_RPC_URL is unset. This is the public
+// endpoint (heavily rate-limited; expect 429s). Set SOLANA_RPC_URL to a dedicated
+// provider (e.g. Helius) for reliable throughput. It is read the same way by web,
+// CLI, and MCP via getConnection:
+//   web  -> .env.local (auto-loaded by Next) / Vercel project env
+//   CLI  -> .env.local via the --env-file-if-exists flag in package.json scripts
+//   MCP  -> .env.local via the same flag in package.json / .mcp.json
+// The CLI also takes --rpc and the stdio MCP an rpcUrl param (both set SOLANA_RPC_URL).
+export const DEFAULT_RPC_URL = "https://api.devnet.solana.com";
 
 export const EXPLORER_ADDR = (addr: string) =>
   `https://explorer.solana.com/address/${addr}?cluster=devnet`;
