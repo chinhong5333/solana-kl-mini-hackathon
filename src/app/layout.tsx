@@ -3,8 +3,7 @@ import "./globals.css";
 import ThemeToggle from "@/components/ThemeToggle";
 
 export const metadata: Metadata = {
-  title: "Solhakathon",
-  description: "Team base Next.js app (Vercel-ready).",
+  title: "SolSplit",
 };
 
 // Apply the saved theme before paint to avoid a flash. No saved value => CSS

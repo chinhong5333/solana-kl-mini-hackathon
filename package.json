@@ -1,8 +1,7 @@
 {
-  "name": "solhakathon",
+  "name": "solsplit",
   "version": "0.1.0",
   "private": true,
-  "description": "Team base Next.js app (Vercel-ready) with Solana devnet wallet creation. Shared foundation for the hackathon.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

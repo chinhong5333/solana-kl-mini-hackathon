@@ -12,11 +12,8 @@ export default function Home() {
       }}
     >
       <h1 style={{ fontSize: 34, letterSpacing: "-0.02em", marginBottom: 8 }}>
-        Solhakathon
+        SolSplit
       </h1>
-      <p style={{ color: "var(--muted)", marginTop: 0 }}>
-        Team base Next.js app (App Router, TypeScript, Vercel-ready).
-      </p>
 
       <WalletPanel />
       <Transfer />
