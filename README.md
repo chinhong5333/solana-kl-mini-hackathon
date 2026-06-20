@@ -60,10 +60,12 @@ Import shared code via the `@/...` alias instead of long relative paths.
 The web app, the CLI, and the MCP server all call the same `src/service/` layer, so behavior is identical across them. The CLI and MCP run as a single local "device" (wallet keyed by `WALLET_DEVICE_ID`, default `local`).
 
 ```bash
-npm run cli -- create     # provision the local wallet (+ best-effort airdrop)
+npm run cli -- create     # provision the local wallet (instant; unfunded)
 npm run cli -- status     # wallet address + live SOL balance
 npm run cli -- airdrop    # request a devnet airdrop
 ```
+
+It is a one-shot command runner (it runs the command and exits), not a prompt. Run `npm run cli` with no command to open an interactive shell instead (type `create` / `status` / `airdrop`, `exit` to quit).
 
 The MCP server exposes `wallet_create`, `wallet_status`, and `wallet_airdrop` two ways, both sharing `src/service/`:
 
