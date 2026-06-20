@@ -6,6 +6,7 @@
 // context here, so the synchronous accessors (loadState/loadWallet) used in the
 // routes keep working unchanged.
 import { randomUUID } from "node:crypto";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { kvGet, kvLockAcquire, kvLockRelease, kvSet } from "../kv/store";
 import { runInContext } from "../runtime/context";
 import { defaultState, normalize } from "./store";
@@ -27,6 +28,14 @@ const LOCK_MAX_RETRIES = 130; // ~65s, just past TTL
 // In-process per-device mutex. Serializes overlapping requests within one
 // serverless instance; the KV lock below covers the cross-instance case.
 const locks = new Map<string, Promise<unknown>>();
+
+// Forced-device override. Set by trusted server-side callers (the HTTP MCP
+// route) so the service runs as one fixed, provisioned device instead of the
+// per-browser cookie device. Never set on normal web/CLI paths.
+const forcedDevice = new AsyncLocalStorage<{ deviceId: string; provision: boolean }>();
+export function withForcedDevice<T>(deviceId: string, provision: boolean, fn: () => Promise<T> | T): Promise<T> {
+  return Promise.resolve(forcedDevice.run({ deviceId, provision }, () => fn()));
+}
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -58,6 +67,8 @@ async function readCookieDevice(): Promise<{ web: boolean; gid: string | null }>
 //   client-supplied cookie can NEVER create KV state; only /api/wallet/create does.
 // - Non-web: deviceId = env/"local", provision = true (auto-create).
 export async function resolveDevice(): Promise<{ deviceId: string | null; provision: boolean }> {
+  const forced = forcedDevice.getStore();
+  if (forced) return forced;
   const probe = await readCookieDevice();
   if (probe.web) return { deviceId: probe.gid, provision: false };
   return { deviceId: process.env.WALLET_DEVICE_ID || "local", provision: true };

@@ -5,6 +5,8 @@ import { loadState, saveState } from "@/lib/state/store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Devnet RPC read can stall; allow headroom over Vercel's 10s default.
+export const maxDuration = 30;
 
 // Current device state. Returns an empty wallet (publicKey "") until the device
 // has provisioned one via POST /api/wallet/create.

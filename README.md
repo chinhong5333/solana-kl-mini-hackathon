@@ -65,7 +65,10 @@ npm run cli -- status     # wallet address + live SOL balance
 npm run cli -- airdrop    # request a devnet airdrop
 ```
 
-The MCP server (`npm run mcp`) exposes `wallet_create`, `wallet_status`, and `wallet_airdrop` over stdio. It is registered for Claude Code in `.mcp.json` (runs `npx tsx mcp/server.ts` from the project root), so any MCP client in this repo can call those tools.
+The MCP server exposes `wallet_create`, `wallet_status`, and `wallet_airdrop` two ways, both sharing `src/service/`:
+
+- **stdio** (`npm run mcp`) for local clients. Registered for Claude Code in `.mcp.json` (`npx tsx mcp/server.ts`). Runs as the `local` device.
+- **HTTP** at `POST /api/mcp` (Streamable HTTP, `mcp-handler`) for remote clients once deployed. Point an MCP host at `https://<your-app>/api/mcp`. HTTP carries no `gid` cookie, so it runs as one fixed server-side device (`MCP_DEVICE_ID`, default `mcp`).
 
 ## How wallet custody works
 
@@ -92,4 +95,10 @@ Copy `.env.example` to `.env.local`. `.env*.local` is gitignored. Browser-expose
 
 ## Deploy (Vercel)
 
-Zero-config: import the repo in Vercel (auto-detects Next.js). Add a Vercel KV store and set `KV_REST_API_URL`, `KV_REST_API_TOKEN`, and `WALLET_MASTER_KEY` in project env. Pushes to `main` ship to production; PRs get preview URLs. `/api/health` returns `{ status: "ok" }` to confirm a deploy is live.
+Import the repo in Vercel (auto-detects Next.js). Then:
+
+1. Add a Redis/KV store and set `KV_REST_API_URL`, `KV_REST_API_TOKEN`, and `WALLET_MASTER_KEY` in project env (without them, the file fallback is used, which is not durable on serverless).
+2. Function duration: on-chain routes can run ~30s. `vercel.json` sets `maxDuration: 60` for `src/app/api/**/*`, and the heavy routes also declare it inline. Hobby caps at 60s; raise on Pro.
+3. Enable Fluid compute for the HTTP MCP endpoint (`/api/mcp`) for better concurrency on long calls.
+
+What runs where: the web app and the `/api/mcp` HTTP MCP endpoint are hosted on Vercel. The CLI and the stdio MCP server are local tools (run them against the same KV by setting the KV env vars locally). Pushes to `main` ship to production; PRs get preview URLs. `/api/health` returns `{ status: "ok" }` to confirm a deploy is live.

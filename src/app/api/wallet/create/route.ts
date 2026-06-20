@@ -7,6 +7,8 @@ import { runWithDevice } from "@/lib/state/lock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Airdrop + on-chain confirmation can take ~30s; raise above Vercel's 10s default.
+export const maxDuration = 60;
 
 const msg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 

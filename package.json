@@ -14,12 +14,14 @@
     "mcp": "tsx mcp/server.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@modelcontextprotocol/sdk": "1.26.0",
     "@solana/web3.js": "^1.95.4",
     "@vercel/kv": "^3.0.0",
+    "mcp-handler": "^1.0.2",
     "next": "16.2.9",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "zod": "^3.25.0"
   },
   "devDependencies": {
     "@types/node": "^22.7.5",
