@@ -30,6 +30,8 @@ No env vars needed for local dev. Click **Create wallet** on the home page: it g
 | `npm start` | Run the production build |
 | `npm run lint` | ESLint (`npm run lint:fix` to autofix) |
 | `npm run typecheck` | `tsc --noEmit` |
+| `npm run cli -- <cmd>` | Wallet CLI (`create` / `status` / `airdrop`) |
+| `npm run mcp` | Start the wallet MCP server (stdio) |
 
 ## Project layout
 
@@ -39,6 +41,7 @@ src/app/api/health/      liveness probe
 src/app/api/state/       current device state (wallet address + balance)
 src/app/api/wallet/create/  provision a device wallet (POST)
 src/components/          client UI (WalletCreator)
+src/service/             shared service layer (web + CLI + MCP drive this)
 src/lib/config.ts        network + constants
 src/lib/types.ts         AppState shape
 src/lib/kv/              KV persistence (Vercel KV or local file fallback)
@@ -46,9 +49,23 @@ src/lib/wallet/          encrypted per-device keypair custody
 src/lib/state/           per-device state + distributed lock
 src/lib/runtime/         AsyncLocalStorage request context
 src/lib/solana/          devnet connection + wallet helpers
+cli/wallet.ts            CLI entry (npm run cli)
+mcp/server.ts            MCP stdio server (npm run mcp)
 ```
 
 Import shared code via the `@/...` alias instead of long relative paths.
+
+## CLI and MCP
+
+The web app, the CLI, and the MCP server all call the same `src/service/` layer, so behavior is identical across them. The CLI and MCP run as a single local "device" (wallet keyed by `WALLET_DEVICE_ID`, default `local`).
+
+```bash
+npm run cli -- create     # provision the local wallet (+ best-effort airdrop)
+npm run cli -- status     # wallet address + live SOL balance
+npm run cli -- airdrop    # request a devnet airdrop
+```
+
+The MCP server (`npm run mcp`) exposes `wallet_create`, `wallet_status`, and `wallet_airdrop` over stdio. It is registered for Claude Code in `.mcp.json` (runs `npx tsx mcp/server.ts` from the project root), so any MCP client in this repo can call those tools.
 
 ## How wallet custody works
 
