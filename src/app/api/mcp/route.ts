@@ -1,10 +1,10 @@
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
 import { withForcedDevice } from "@/lib/state/lock";
-import { createWallet, getState, requestAirdrop, split } from "@/service";
+import { createWallet, getState, split } from "@/service";
 
 export const runtime = "nodejs";
-// Tools hit devnet (airdrop/confirm); raise above Vercel's 10s default.
+// Tools hit devnet (transfer/split confirm); raise above Vercel's 10s default.
 export const maxDuration = 60;
 
 // HTTP MCP carries no `gid` cookie, so it can't ride the per-browser device.
@@ -18,7 +18,7 @@ const handler = createMcpHandler(
   (server) => {
     server.tool(
       "wallet_create",
-      "Provision this device's Solana devnet wallet (with a best-effort airdrop). Returns the public key.",
+      "Provision this device's Solana devnet wallet. Returns the public key (unfunded).",
       {},
       async () => text(await asDevice(createWallet)),
     );
@@ -27,12 +27,6 @@ const handler = createMcpHandler(
       "Read the wallet address and live devnet SOL balance.",
       {},
       async () => text(await asDevice(getState)),
-    );
-    server.tool(
-      "wallet_airdrop",
-      "Request a devnet SOL airdrop for the wallet (faucet is rate-limited).",
-      {},
-      async () => text(await asDevice(requestAirdrop)),
     );
     server.tool(
       "wallet_split",

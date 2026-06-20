@@ -1,7 +1,7 @@
 // Wallet CLI. Drives the same shared service as the web app and the MCP server.
 //
 // Two modes:
-//   one-shot     npm run cli -- <create|status|airdrop>
+//   one-shot     npm run cli -- <create|status|transfer|split>
 //   interactive  npm run cli            (prompt loop; type commands, "exit" to quit)
 import * as readline from "node:readline";
 import * as svc from "../src/service/index";
@@ -12,7 +12,6 @@ const USAGE = `wallet commands:
 
   create                provision this device's devnet wallet (instant; unfunded)
   status                show wallet address + live SOL balance
-  airdrop               request a devnet SOL airdrop (faucet is rate-limited)
   transfer <to> <amt> [token]  send SOL or a token to one recipient (token: SOL|USDC|<mint>)
   split                 multi-transfer SOL or an SPL token to many recipients in one tx
   help                  show this help
@@ -59,9 +58,6 @@ async function run(cmd: string, args: string[] = []): Promise<void> {
       out({ network: s.network, wallet: s.wallet.publicKey, solBalance: s.wallet.solBalance });
       break;
     }
-    case "airdrop":
-      out(await svc.requestAirdrop());
-      break;
     case "transfer": {
       const [to, amount, token] = args;
       if (!to || !amount) {
@@ -89,7 +85,7 @@ async function run(cmd: string, args: string[] = []): Promise<void> {
 // Interactive shell: read a command per line until "exit"/"quit" or EOF.
 async function repl(): Promise<void> {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout, prompt: "wallet> " });
-  console.log('wallet shell. commands: create, status, airdrop, transfer, help, exit.');
+  console.log('wallet shell. commands: create, status, transfer, split, help, exit.');
   rl.prompt();
   for await (const line of rl) {
     const [cmd, ...args] = line.trim().split(/\s+/);

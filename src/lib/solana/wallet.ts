@@ -1,4 +1,4 @@
-import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { getKeypair } from "../runtime/context";
 import type { TokenBalance } from "../types";
@@ -26,16 +26,4 @@ export async function getTokenBalances(conn: Connection, owner: PublicKey): Prom
       };
     })
     .filter((t) => t.amount > 0);
-}
-
-// Request a devnet airdrop and wait for confirmation. Devnet airdrops are
-// rate-limited and frequently return 429; callers must handle rejection.
-export async function airdrop(conn: Connection, kp: Keypair, sol = 1): Promise<string> {
-  const sig = await conn.requestAirdrop(kp.publicKey, sol * LAMPORTS_PER_SOL);
-  const bh = await conn.getLatestBlockhash();
-  await conn.confirmTransaction(
-    { signature: sig, blockhash: bh.blockhash, lastValidBlockHeight: bh.lastValidBlockHeight },
-    "confirmed",
-  );
-  return sig;
 }

@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 // `gid` cookie if present, otherwise mints a new device id. The keypair bundle
 // is generated + stored (encrypted) server-side on first call; the secret never
 // leaves the server. Returns immediately (no on-chain calls); funding is a
-// separate step (airdrop module).
+// separate step (e.g. the public devnet faucet).
 //
 // runWithDevice persists both the keypair bundle (keys:<deviceId>) and the state
 // (state:<deviceId>) to KV / the local file fallback, so the wallet survives a

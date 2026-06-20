@@ -22,7 +22,7 @@ const splitShape = {
 
 server.registerTool(
   "wallet_create",
-  { description: "Provision this device's Solana devnet wallet (with a best-effort airdrop). Returns the public key." },
+  { description: "Provision this device's Solana devnet wallet. Returns the public key (unfunded)." },
   async () => ok(await svc.createWallet()),
 );
 
@@ -30,12 +30,6 @@ server.registerTool(
   "wallet_status",
   { description: "Read the wallet address and live devnet SOL balance." },
   async () => ok(await svc.getState()),
-);
-
-server.registerTool(
-  "wallet_airdrop",
-  { description: "Request a devnet SOL airdrop for the wallet (faucet is rate-limited)." },
-  async () => ok(await svc.requestAirdrop()),
 );
 
 server.registerTool(

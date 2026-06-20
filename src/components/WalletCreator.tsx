@@ -46,7 +46,7 @@ export default function WalletCreator({ refreshSignal = 0 }: { refreshSignal?: n
       const d = await r.json();
       if (d.ok) {
         setPublicKey(d.publicKey);
-        setNote("Wallet ready. Unfunded; airdrop is a separate step.");
+        setNote("Wallet ready. Unfunded; fund it from the devnet faucet.");
         await refresh();
       } else {
         setNote("Failed to create wallet.");

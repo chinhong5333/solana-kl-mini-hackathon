@@ -18,7 +18,7 @@ const stateKey = (deviceId: string) => `state:${deviceId}`;
 const lockKey = (deviceId: string) => `lock:${deviceId}`;
 
 // Distributed lock tuning. TTL must outlast the slowest critical section (a
-// devnet airdrop can await ~30s) so the lock never expires mid-write. The retry
+// devnet transfer/split can await ~30s) so the lock never expires mid-write. The retry
 // budget slightly exceeds the TTL so a waiter QUEUES behind a normal in-flight
 // request instead of failing fast.
 const LOCK_TTL_MS = 60_000;

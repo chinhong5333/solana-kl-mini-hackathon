@@ -19,7 +19,7 @@ npm install
 npm run dev        # http://localhost:3000
 ```
 
-No env vars needed for local dev. Click **Create wallet** on the home page: it generates a Solana devnet keypair server-side, stores it under `data/kv/` (gitignored), and attempts a best-effort devnet airdrop.
+No env vars needed for local dev. Click **Create wallet** on the home page: it generates a Solana devnet keypair server-side and stores it under `data/kv/` (gitignored). The wallet starts unfunded; fund it from the public devnet faucet.
 
 ## Scripts
 
@@ -30,7 +30,7 @@ No env vars needed for local dev. Click **Create wallet** on the home page: it g
 | `npm start` | Run the production build |
 | `npm run lint` | ESLint (`npm run lint:fix` to autofix) |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm run cli -- <cmd>` | Wallet CLI (`create` / `status` / `airdrop` / `transfer`) |
+| `npm run cli -- <cmd>` | Wallet CLI (`create` / `status` / `transfer` / `split`) |
 | `npm run mcp` | Start the wallet MCP server (stdio) |
 
 ## Project layout
@@ -62,14 +62,13 @@ The web app, the CLI, and the MCP server all call the same `src/service/` layer,
 ```bash
 npm run cli -- create                       # provision the local wallet (instant; unfunded)
 npm run cli -- status                        # wallet address + live SOL balance
-npm run cli -- airdrop                       # request a devnet airdrop
 npm run cli -- transfer <address> 0.1        # send SOL to one recipient
 npm run cli -- transfer <address> 1.5 USDC   # send USDC (or any SPL mint) to one recipient
 ```
 
-It is a one-shot command runner (it runs the command and exits), not a prompt. Run `npm run cli` with no command to open an interactive shell instead (type `create` / `status` / `airdrop` / `transfer` / `split`, `exit` to quit).
+It is a one-shot command runner (it runs the command and exits), not a prompt. Run `npm run cli` with no command to open an interactive shell instead (type `create` / `status` / `transfer` / `split`, `exit` to quit).
 
-The MCP server exposes `wallet_create`, `wallet_status`, `wallet_airdrop`, `wallet_transfer`, and `wallet_split` two ways, both sharing `src/service/`:
+The MCP server exposes `wallet_create`, `wallet_status`, `wallet_transfer`, and `wallet_split` two ways, both sharing `src/service/`:
 
 - **stdio** (`npm run mcp`) for local clients. Registered for Claude Code in `.mcp.json` (`npx tsx mcp/server.ts`). Runs as the `local` device.
 - **HTTP** at `POST /api/mcp` (Streamable HTTP, `mcp-handler`) for remote clients once deployed. Point an MCP host at `https://<your-app>/api/mcp`. HTTP carries no `gid` cookie, so it runs as one fixed server-side device (`MCP_DEVICE_ID`, default `mcp`).

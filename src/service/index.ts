@@ -2,7 +2,7 @@
 // wallet operations through these functions, so behavior is identical across
 // frontends. Everything here is real on Solana devnet.
 import { getConnection } from "../lib/solana/connection";
-import { airdrop, getSolBalance, loadWallet } from "../lib/solana/wallet";
+import { getSolBalance, loadWallet } from "../lib/solana/wallet";
 import { splitFunds, type Recipient, type SplitResult } from "../lib/solana/split";
 import { transferFunds } from "../lib/solana/transfer";
 import { withStateLock } from "../lib/state/lock";
@@ -33,7 +33,7 @@ export const getState = (): Promise<AppState> =>
 
 // Provision this device's wallet (created on first use by withStateLock for
 // non-web callers). Returns immediately: just generate + store the keypair, no
-// on-chain calls. Funding is a separate step (requestAirdrop).
+// on-chain calls. Funding is a separate step (e.g. the public faucet).
 export const createWallet = () =>
   withStateLock(() => {
     const s = loadState();
@@ -41,24 +41,6 @@ export const createWallet = () =>
     s.wallet.publicKey = publicKey;
     saveState(s);
     return { ok: true as const, publicKey, solBalance: s.wallet.solBalance };
-  });
-
-// Request a devnet SOL airdrop for the wallet (faucet is rate-limited).
-export const requestAirdrop = () =>
-  withStateLock(async () => {
-    const s = loadState();
-    const kp = loadWallet();
-    s.wallet.publicKey = kp.publicKey.toBase58();
-    const conn = getConnection();
-    try {
-      const sig = await airdrop(conn, kp, 1);
-      s.wallet.solBalance = await getSolBalance(conn, kp.publicKey);
-      saveState(s);
-      return { ok: true as const, signature: sig, balance: s.wallet.solBalance };
-    } catch (e) {
-      saveState(s);
-      return { ok: false as const, error: msg(e) };
-    }
   });
 
 // Multi-transfer ("split") from this device's wallet to many recipients in one
