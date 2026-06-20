@@ -1,0 +1,29 @@
+{
+  "name": "solhakathon",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Team base Next.js app (Vercel-ready) with Solana devnet wallet creation. Shared foundation for the hackathon.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.95.4",
+    "@vercel/kv": "^3.0.0",
+    "next": "16.2.9",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "eslint": "^9.34.0",
+    "eslint-config-next": "16.2.9",
+    "typescript": "^5.9.2"
+  }
+}
