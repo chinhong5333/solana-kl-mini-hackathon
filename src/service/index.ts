@@ -4,6 +4,7 @@
 import { getConnection } from "../lib/solana/connection";
 import { airdrop, getSolBalance, loadWallet } from "../lib/solana/wallet";
 import { splitFunds, type Recipient, type SplitResult } from "../lib/solana/split";
+import { transferFunds } from "../lib/solana/transfer";
 import { withStateLock } from "../lib/state/lock";
 import { loadState, saveState } from "../lib/state/store";
 import type { AppState } from "../lib/types";
@@ -81,6 +82,31 @@ export const split = (
       saveState(s);
       return result;
     } catch (e) {
+      return { ok: false as const, error: msg(e) };
+    }
+  });
+
+// Transfer from this device's wallet to a single recipient. `mint`
+// omitted/null/"SOL" => native SOL; otherwise an SPL token (e.g. USDC). Amount
+// is in UI units. Validates the address before touching the chain; refreshes
+// the cached SOL balance on success.
+export const sendFunds = (to: string, amount: number, mint?: string | null) =>
+  withStateLock(async () => {
+    const s = loadState();
+    const kp = loadWallet();
+    s.wallet.publicKey = kp.publicKey.toBase58();
+    const conn = getConnection();
+    try {
+      const result = await transferFunds(conn, kp, to, amount, mint);
+      try {
+        s.wallet.solBalance = await getSolBalance(conn, kp.publicKey);
+      } catch {
+        // RPC hiccup; keep last known balance
+      }
+      saveState(s);
+      return { ...result, balance: s.wallet.solBalance };
+    } catch (e) {
+      saveState(s);
       return { ok: false as const, error: msg(e) };
     }
   });

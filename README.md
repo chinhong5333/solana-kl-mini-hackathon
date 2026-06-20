@@ -30,7 +30,7 @@ No env vars needed for local dev. Click **Create wallet** on the home page: it g
 | `npm start` | Run the production build |
 | `npm run lint` | ESLint (`npm run lint:fix` to autofix) |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm run cli -- <cmd>` | Wallet CLI (`create` / `status` / `airdrop`) |
+| `npm run cli -- <cmd>` | Wallet CLI (`create` / `status` / `airdrop` / `transfer`) |
 | `npm run mcp` | Start the wallet MCP server (stdio) |
 
 ## Project layout
@@ -60,21 +60,27 @@ Import shared code via the `@/...` alias instead of long relative paths.
 The web app, the CLI, and the MCP server all call the same `src/service/` layer, so behavior is identical across them. The CLI and MCP run as a single local "device" (wallet keyed by `WALLET_DEVICE_ID`, default `local`).
 
 ```bash
-npm run cli -- create     # provision the local wallet (instant; unfunded)
-npm run cli -- status     # wallet address + live SOL balance
-npm run cli -- airdrop    # request a devnet airdrop
-
-# multi-transfer (split) to many recipients in one transaction:
-npm run cli -- split <addr>:0.1 <addr>:0.25            # native SOL
-npm run cli -- split --mint <MINT> <addr>:1.5 <addr>:2 # SPL token
+npm run cli -- create                       # provision the local wallet (instant; unfunded)
+npm run cli -- status                        # wallet address + live SOL balance
+npm run cli -- airdrop                       # request a devnet airdrop
+npm run cli -- transfer <address> 0.1        # send SOL to one recipient
+npm run cli -- transfer <address> 1.5 USDC   # send USDC (or any SPL mint) to one recipient
 ```
 
-It is a one-shot command runner (it runs the command and exits), not a prompt. Run `npm run cli` with no command to open an interactive shell instead (type `create` / `status` / `airdrop`, `exit` to quit).
+It is a one-shot command runner (it runs the command and exits), not a prompt. Run `npm run cli` with no command to open an interactive shell instead (type `create` / `status` / `airdrop` / `transfer` / `split`, `exit` to quit).
 
-The MCP server exposes `wallet_create`, `wallet_status`, `wallet_airdrop`, and `wallet_split` two ways, both sharing `src/service/`:
+The MCP server exposes `wallet_create`, `wallet_status`, `wallet_airdrop`, `wallet_transfer`, and `wallet_split` two ways, both sharing `src/service/`:
 
 - **stdio** (`npm run mcp`) for local clients. Registered for Claude Code in `.mcp.json` (`npx tsx mcp/server.ts`). Runs as the `local` device.
 - **HTTP** at `POST /api/mcp` (Streamable HTTP, `mcp-handler`) for remote clients once deployed. Point an MCP host at `https://<your-app>/api/mcp`. HTTP carries no `gid` cookie, so it runs as one fixed server-side device (`MCP_DEVICE_ID`, default `mcp`).
+
+## Transfer (single recipient)
+
+Send SOL or an SPL token (e.g. **USDC**) from the device wallet to **one recipient**. Available on all three surfaces (the "Send funds" web card, `cli transfer`, MCP `wallet_transfer`), all driving `src/service/`’s `sendFunds()` → `src/lib/solana/transfer.ts`.
+
+- **Native SOL**: a single `SystemProgram.transfer`, with a fee-aware balance precheck.
+- **SPL token**: a standard decimals-checked SPL transfer (`createTransferCheckedInstruction`). The recipient’s Associated Token Account is created idempotently if missing (the signer pays the ~0.002 SOL rent). A single transfer doesn’t need the `fund_splitter` program.
+- The token is chosen by **symbol** (`SOL`, `USDC`) or a raw **mint address**; presets live in `KNOWN_TOKENS` in `src/lib/config.ts` (USDC = Circle’s devnet mint). Amounts are in **UI units** (e.g. `1.5`), scaled by the mint’s decimals.
 
 ## Multi-transfer (split)
 

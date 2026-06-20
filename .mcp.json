@@ -2,7 +2,7 @@
   "mcpServers": {
     "solhakathon-wallet": {
       "command": "npx",
-      "args": ["tsx", "mcp/server.ts"]
+      "args": ["tsx", "--env-file-if-exists=.env.local", "mcp/server.ts"]
     }
   }
 }

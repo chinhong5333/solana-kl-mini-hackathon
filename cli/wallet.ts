@@ -10,19 +10,21 @@ const out = (d: unknown) => console.log(typeof d === "string" ? d : JSON.stringi
 
 const USAGE = `wallet commands:
 
-  create     provision this device's devnet wallet (instant; unfunded)
-  status     show wallet address + live SOL balance
-  airdrop    request a devnet SOL airdrop (faucet is rate-limited)
-  split      multi-transfer SOL or an SPL token to many recipients in one tx
-  help       show this help
-  exit       leave the interactive shell
+  create                provision this device's devnet wallet (instant; unfunded)
+  status                show wallet address + live SOL balance
+  airdrop               request a devnet SOL airdrop (faucet is rate-limited)
+  transfer <to> <amt> [token]  send SOL or a token to one recipient (token: SOL|USDC|<mint>)
+  split                 multi-transfer SOL or an SPL token to many recipients in one tx
+  help                  show this help
+  exit                  leave the interactive shell
 
   split usage:
     split <addr>:<amount> [<addr>:<amount> ...]            # native SOL
     split --mint <MINT> <addr>:<amount> [<addr>:<amount> ] # SPL token
     amounts are in UI units (e.g. 1.5); SPL amounts scale by mint decimals
 
-  one-shot:      npm run cli -- create
+  one-shot:      npm run cli -- transfer <address> 0.1          # SOL
+  one-shot:      npm run cli -- transfer <address> 1.5 USDC     # USDC (or a mint)
   one-shot:      npm run cli -- split <addr>:0.1 <addr>:0.2
   interactive:   npm run cli`;
 
@@ -60,6 +62,15 @@ async function run(cmd: string, args: string[] = []): Promise<void> {
     case "airdrop":
       out(await svc.requestAirdrop());
       break;
+    case "transfer": {
+      const [to, amount, token] = args;
+      if (!to || !amount) {
+        console.log("usage: transfer <recipient-address> <amount> [SOL|USDC|<mint>]");
+        break;
+      }
+      out(await svc.sendFunds(to, Number(amount), token));
+      break;
+    }
     case "split": {
       const { mint, recipients } = parseSplitArgs(args);
       out(await svc.split(recipients, mint));
@@ -78,13 +89,12 @@ async function run(cmd: string, args: string[] = []): Promise<void> {
 // Interactive shell: read a command per line until "exit"/"quit" or EOF.
 async function repl(): Promise<void> {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout, prompt: "wallet> " });
-  console.log('wallet shell. commands: create, status, airdrop, help, exit.');
+  console.log('wallet shell. commands: create, status, airdrop, transfer, help, exit.');
   rl.prompt();
   for await (const line of rl) {
-    const trimmed = line.trim();
-    if (trimmed === "exit" || trimmed === "quit") break;
-    if (trimmed) {
-      const [cmd, ...args] = trimmed.split(/\s+/);
+    const [cmd, ...args] = line.trim().split(/\s+/);
+    if (cmd === "exit" || cmd === "quit") break;
+    if (cmd) {
       try {
         await run(cmd, args);
       } catch (e) {

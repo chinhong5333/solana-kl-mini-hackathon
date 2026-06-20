@@ -10,9 +10,9 @@
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "typecheck": "tsc --noEmit",
-    "cli": "tsx cli/wallet.ts",
-    "mcp": "tsx mcp/server.ts",
-    "mcp:serve": "tsx mcp/server.ts"
+    "cli": "tsx --env-file-if-exists=.env.local cli/wallet.ts",
+    "mcp": "tsx --env-file-if-exists=.env.local mcp/server.ts",
+    "mcp:serve": "tsx --env-file-if-exists=.env.local mcp/server.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.26.0",

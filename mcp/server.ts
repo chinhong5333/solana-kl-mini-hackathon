@@ -39,6 +39,23 @@ server.registerTool(
 );
 
 server.registerTool(
+  "wallet_transfer",
+  {
+    description:
+      "Transfer SOL or an SPL token (e.g. USDC) from this device's wallet to a single recipient on devnet. Omit `mint` (or pass 'SOL') for native SOL; pass 'USDC' or a mint address for a token. The recipient's token account is auto-created if missing.",
+    inputSchema: {
+      to: z.string().describe("Recipient's base58 Solana address"),
+      amount: z.number().positive().describe("Amount to send, in UI units (e.g. 1.5)"),
+      mint: z
+        .string()
+        .optional()
+        .describe("Token to send: 'SOL' (default), 'USDC', or an SPL mint address."),
+    },
+  },
+  async ({ to, amount, mint }) => ok(await svc.sendFunds(to, amount, mint)),
+);
+
+server.registerTool(
   "wallet_split",
   {
     description:

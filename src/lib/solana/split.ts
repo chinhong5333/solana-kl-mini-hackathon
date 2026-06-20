@@ -55,7 +55,7 @@ function encodeSplitData(amounts: bigint[]): Buffer {
 
 // Scale a UI amount to integer base units without floating-point drift.
 // e.g. ("1.5", 9) -> 1_500_000_000n. Rejects non-positive / over-precise input.
-function toBaseUnits(amount: number, decimals: number): bigint {
+export function toBaseUnits(amount: number, decimals: number): bigint {
   if (!Number.isFinite(amount) || amount <= 0) {
     throw new Error(`Amount must be a positive number (got ${amount}).`);
   }
