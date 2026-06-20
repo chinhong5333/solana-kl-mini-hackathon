@@ -43,7 +43,7 @@ export default function WalletCreator() {
       const d = await r.json();
       if (d.ok) {
         setPublicKey(d.publicKey);
-        setNote(d.airdropError ? `Wallet ready. Devnet airdrop skipped: ${d.airdropError}` : "Wallet ready.");
+        setNote("Wallet ready. Unfunded; airdrop is a separate step.");
         await refresh();
       } else {
         setNote("Failed to create wallet.");

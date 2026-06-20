@@ -1,7 +1,6 @@
 // Shared service layer. The HTTP routes, the CLI, and the MCP server all drive
 // wallet operations through these functions, so behavior is identical across
 // frontends. Everything here is real on Solana devnet.
-import { LAUNCH_MIN_SOL } from "../lib/config";
 import { getConnection } from "../lib/solana/connection";
 import { airdrop, getSolBalance, loadWallet } from "../lib/solana/wallet";
 import { withStateLock } from "../lib/state/lock";
@@ -31,24 +30,15 @@ export const getState = (): Promise<AppState> =>
   });
 
 // Provision this device's wallet (created on first use by withStateLock for
-// non-web callers). Best-effort devnet airdrop so the new wallet has gas.
+// non-web callers). Returns immediately: just generate + store the keypair, no
+// on-chain calls. Funding is a separate step (requestAirdrop).
 export const createWallet = () =>
-  withStateLock(async () => {
+  withStateLock(() => {
     const s = loadState();
-    const wallet = loadWallet();
-    const publicKey = wallet.publicKey.toBase58();
+    const publicKey = loadWallet().publicKey.toBase58();
     s.wallet.publicKey = publicKey;
-    const conn = getConnection();
-    let airdropError: string | undefined;
-    try {
-      const bal = await getSolBalance(conn, wallet.publicKey);
-      if (bal < LAUNCH_MIN_SOL) await airdrop(conn, wallet, 1);
-      s.wallet.solBalance = await getSolBalance(conn, wallet.publicKey);
-    } catch (e) {
-      airdropError = msg(e); // faucet rate-limited; wallet still exists
-    }
     saveState(s);
-    return { ok: true as const, publicKey, solBalance: s.wallet.solBalance, airdropError };
+    return { ok: true as const, publicKey, solBalance: s.wallet.solBalance };
   });
 
 // Request a devnet SOL airdrop for the wallet (faucet is rate-limited).
