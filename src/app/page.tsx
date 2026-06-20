@@ -1,4 +1,4 @@
-import WalletCreator from "@/components/WalletCreator";
+import WalletPanel from "@/components/WalletPanel";
 
 export default function Home() {
   return (
@@ -17,7 +17,7 @@ export default function Home() {
         Team base Next.js app (App Router, TypeScript, Vercel-ready).
       </p>
 
-      <WalletCreator />
+      <WalletPanel />
 
       <h2 style={{ fontSize: 18, marginTop: 36 }}>Quick start</h2>
       <pre

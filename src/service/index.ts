@@ -3,6 +3,7 @@
 // frontends. Everything here is real on Solana devnet.
 import { getConnection } from "../lib/solana/connection";
 import { airdrop, getSolBalance, loadWallet } from "../lib/solana/wallet";
+import { splitFunds, type Recipient, type SplitResult } from "../lib/solana/split";
 import { withStateLock } from "../lib/state/lock";
 import { loadState, saveState } from "../lib/state/store";
 import type { AppState } from "../lib/types";
@@ -55,6 +56,31 @@ export const requestAirdrop = () =>
       return { ok: true as const, signature: sig, balance: s.wallet.solBalance };
     } catch (e) {
       saveState(s);
+      return { ok: false as const, error: msg(e) };
+    }
+  });
+
+// Multi-transfer ("split") from this device's wallet to many recipients in one
+// transaction. `mint` omitted/"SOL" => native SOL; otherwise an SPL token split
+// via the fund_splitter program. Amounts are UI units (scaled by decimals).
+export const split = (
+  recipients: Recipient[],
+  mint?: string | null,
+): Promise<SplitResult | { ok: false; error: string }> =>
+  withStateLock(async () => {
+    try {
+      const kp = loadWallet();
+      const s = loadState();
+      s.wallet.publicKey = kp.publicKey.toBase58();
+      const result = await splitFunds(getConnection(), kp, recipients, mint);
+      try {
+        s.wallet.solBalance = await getSolBalance(getConnection(), kp.publicKey);
+      } catch {
+        // RPC hiccup; keep last known balance
+      }
+      saveState(s);
+      return result;
+    } catch (e) {
       return { ok: false as const, error: msg(e) };
     }
   });

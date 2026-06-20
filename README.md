@@ -63,14 +63,28 @@ The web app, the CLI, and the MCP server all call the same `src/service/` layer,
 npm run cli -- create     # provision the local wallet (instant; unfunded)
 npm run cli -- status     # wallet address + live SOL balance
 npm run cli -- airdrop    # request a devnet airdrop
+
+# multi-transfer (split) to many recipients in one transaction:
+npm run cli -- split <addr>:0.1 <addr>:0.25            # native SOL
+npm run cli -- split --mint <MINT> <addr>:1.5 <addr>:2 # SPL token
 ```
 
 It is a one-shot command runner (it runs the command and exits), not a prompt. Run `npm run cli` with no command to open an interactive shell instead (type `create` / `status` / `airdrop`, `exit` to quit).
 
-The MCP server exposes `wallet_create`, `wallet_status`, and `wallet_airdrop` two ways, both sharing `src/service/`:
+The MCP server exposes `wallet_create`, `wallet_status`, `wallet_airdrop`, and `wallet_split` two ways, both sharing `src/service/`:
 
 - **stdio** (`npm run mcp`) for local clients. Registered for Claude Code in `.mcp.json` (`npx tsx mcp/server.ts`). Runs as the `local` device.
 - **HTTP** at `POST /api/mcp` (Streamable HTTP, `mcp-handler`) for remote clients once deployed. Point an MCP host at `https://<your-app>/api/mcp`. HTTP carries no `gid` cookie, so it runs as one fixed server-side device (`MCP_DEVICE_ID`, default `mcp`).
+
+## Multi-transfer (split)
+
+Send SOL or an SPL token from the device wallet to **many recipients in one transaction**. Available on all three surfaces (web card on the home page, `cli split`, MCP `wallet_split`), all driving `src/service/`’s `split()`.
+
+- **Native SOL**: batches one `SystemProgram.transfer` per recipient (no on-chain program needed).
+- **SPL token**: drives the on-chain `fund_splitter` program (`67hyWZ9QsHcowmNvUqNCyqMmSTnQtHwL6q7SZqoPZmJt`). Recipients are wallet addresses; each one’s Associated Token Account for the mint is derived, any missing ATA is created idempotently in the same transaction (the signer pays the ~0.002 SOL rent), then `split` runs with the receiver ATAs as remaining accounts.
+- Amounts are entered in **UI units** (e.g. `1.5`) and scaled to base units by the mint’s decimals (lamports for SOL). Capped at `MAX_SPLIT_RECEIVERS` (12) per call so the transaction stays within Solana’s account limit.
+
+The instruction is encoded by hand from the IDL: the Anchor discriminator is `sha256("global:split")[..8]` and the args are a Borsh `Vec<u64>`. See `src/lib/solana/split.ts`.
 
 ## How wallet custody works
 

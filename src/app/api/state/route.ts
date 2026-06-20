@@ -1,5 +1,5 @@
 import { getConnection } from "@/lib/solana/connection";
-import { getSolBalance, loadWallet } from "@/lib/solana/wallet";
+import { getSolBalance, getTokenBalances, loadWallet } from "@/lib/solana/wallet";
 import { withStateLock } from "@/lib/state/lock";
 import { loadState, saveState } from "@/lib/state/store";
 
@@ -16,10 +16,16 @@ export async function GET() {
     try {
       const wallet = loadWallet();
       s.wallet.publicKey = wallet.publicKey.toBase58();
+      const conn = getConnection();
       try {
-        s.wallet.solBalance = await getSolBalance(getConnection(), wallet.publicKey);
+        s.wallet.solBalance = await getSolBalance(conn, wallet.publicKey);
       } catch {
         // RPC hiccup; keep last known balance
+      }
+      try {
+        s.wallet.tokens = await getTokenBalances(conn, wallet.publicKey);
+      } catch {
+        // RPC hiccup; keep last known token list
       }
       saveState(s);
     } catch {

@@ -1,6 +1,7 @@
 import { createMcpHandler } from "mcp-handler";
+import { z } from "zod";
 import { withForcedDevice } from "@/lib/state/lock";
-import { createWallet, getState, requestAirdrop } from "@/service";
+import { createWallet, getState, requestAirdrop, split } from "@/service";
 
 export const runtime = "nodejs";
 // Tools hit devnet (airdrop/confirm); raise above Vercel's 10s default.
@@ -32,6 +33,15 @@ const handler = createMcpHandler(
       "Request a devnet SOL airdrop for the wallet (faucet is rate-limited).",
       {},
       async () => text(await asDevice(requestAirdrop)),
+    );
+    server.tool(
+      "wallet_split",
+      "Multi-transfer from this wallet to many recipients in one transaction. Omit `mint` to split native SOL; pass an SPL mint to split that token (recipient ATAs are auto-created). Amounts are UI units.",
+      {
+        recipients: z.array(z.object({ address: z.string(), amount: z.number().positive() })).min(1),
+        mint: z.string().optional(),
+      },
+      async ({ recipients, mint }) => text(await asDevice(() => split(recipients, mint))),
     );
   },
   {},

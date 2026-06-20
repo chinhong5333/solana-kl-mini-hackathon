@@ -13,13 +13,41 @@ const USAGE = `wallet commands:
   create     provision this device's devnet wallet (instant; unfunded)
   status     show wallet address + live SOL balance
   airdrop    request a devnet SOL airdrop (faucet is rate-limited)
+  split      multi-transfer SOL or an SPL token to many recipients in one tx
   help       show this help
   exit       leave the interactive shell
 
+  split usage:
+    split <addr>:<amount> [<addr>:<amount> ...]            # native SOL
+    split --mint <MINT> <addr>:<amount> [<addr>:<amount> ] # SPL token
+    amounts are in UI units (e.g. 1.5); SPL amounts scale by mint decimals
+
   one-shot:      npm run cli -- create
+  one-shot:      npm run cli -- split <addr>:0.1 <addr>:0.2
   interactive:   npm run cli`;
 
-async function run(cmd: string): Promise<void> {
+// Parse "split" args: optional "--mint <addr>" then one or more "<addr>:<amount>".
+function parseSplitArgs(args: string[]): { mint: string | null; recipients: { address: string; amount: number }[] } {
+  let mint: string | null = null;
+  const recipients: { address: string; amount: number }[] = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--mint") {
+      mint = args[++i] ?? null;
+      if (!mint) throw new Error("--mint requires a mint address");
+      continue;
+    }
+    const idx = args[i].lastIndexOf(":");
+    if (idx <= 0) throw new Error(`bad recipient "${args[i]}"; expected <addr>:<amount>`);
+    const address = args[i].slice(0, idx);
+    const amount = Number(args[i].slice(idx + 1));
+    if (!Number.isFinite(amount)) throw new Error(`bad amount in "${args[i]}"`);
+    recipients.push({ address, amount });
+  }
+  if (recipients.length === 0) throw new Error("split needs at least one <addr>:<amount>");
+  return { mint, recipients };
+}
+
+async function run(cmd: string, args: string[] = []): Promise<void> {
   switch (cmd) {
     case "create":
       out(await svc.createWallet());
@@ -32,6 +60,11 @@ async function run(cmd: string): Promise<void> {
     case "airdrop":
       out(await svc.requestAirdrop());
       break;
+    case "split": {
+      const { mint, recipients } = parseSplitArgs(args);
+      out(await svc.split(recipients, mint));
+      break;
+    }
     case "help":
     case "":
       console.log(USAGE);
@@ -48,11 +81,12 @@ async function repl(): Promise<void> {
   console.log('wallet shell. commands: create, status, airdrop, help, exit.');
   rl.prompt();
   for await (const line of rl) {
-    const cmd = line.trim();
-    if (cmd === "exit" || cmd === "quit") break;
-    if (cmd) {
+    const trimmed = line.trim();
+    if (trimmed === "exit" || trimmed === "quit") break;
+    if (trimmed) {
+      const [cmd, ...args] = trimmed.split(/\s+/);
       try {
-        await run(cmd);
+        await run(cmd, args);
       } catch (e) {
         console.error(e instanceof Error ? e.message : String(e));
       }
@@ -63,9 +97,9 @@ async function repl(): Promise<void> {
 }
 
 async function main() {
-  const [cmd] = process.argv.slice(2);
+  const [cmd, ...args] = process.argv.slice(2);
   if (cmd) {
-    await run(cmd);
+    await run(cmd, args);
   } else {
     await repl();
   }

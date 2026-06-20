@@ -1,39 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-type AppState = { wallet: { publicKey: string; solBalance: number } };
+type TokenBalance = { mint: string; amount: number; decimals: number };
+type AppState = { wallet: { publicKey: string; solBalance: number; tokens?: TokenBalance[] } };
 
-export default function WalletCreator() {
+export default function WalletCreator({ refreshSignal = 0 }: { refreshSignal?: number }) {
   const [publicKey, setPublicKey] = useState("");
   const [balance, setBalance] = useState(0);
+  const [tokens, setTokens] = useState<TokenBalance[]>([]);
   const [loading, setLoading] = useState(false);
   const [note, setNote] = useState("");
 
-  async function refresh() {
-    const r = await fetch("/api/state", { cache: "no-store" });
-    const s: AppState = await r.json();
-    setPublicKey(s.wallet.publicKey);
-    setBalance(s.wallet.solBalance);
-  }
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const r = await fetch("/api/state", { cache: "no-store" });
-        const s: AppState = await r.json();
-        if (!active) return;
-        setPublicKey(s.wallet.publicKey);
-        setBalance(s.wallet.solBalance);
-      } catch {
-        // ignore: wallet just not provisioned yet
-      }
-    })();
-    return () => {
-      active = false;
-    };
+  // quiet=true for background refreshes (mount, post-split): no spinner/error UI.
+  const refresh = useCallback(async (quiet = false) => {
+    if (!quiet) {
+      setLoading(true);
+      setNote("");
+    }
+    try {
+      const r = await fetch("/api/state", { cache: "no-store" });
+      const s: AppState = await r.json();
+      setPublicKey(s.wallet.publicKey);
+      setBalance(s.wallet.solBalance);
+      setTokens(s.wallet.tokens ?? []);
+    } catch {
+      if (!quiet) setNote("Could not refresh balance (RPC error). Try again.");
+    } finally {
+      if (!quiet) setLoading(false);
+    }
   }, []);
+
+  // Initial load, and re-fetch whenever a split bumps refreshSignal.
+  useEffect(() => {
+    void (async () => {
+      await refresh(true);
+    })();
+  }, [refresh, refreshSignal]);
 
   async function createWallet() {
     setLoading(true);
@@ -77,8 +80,32 @@ export default function WalletCreator() {
           <div style={{ marginTop: 10, fontSize: 14 }}>
             Balance: <strong>{balance.toFixed(4)} SOL</strong>
           </div>
+
+          {tokens.length > 0 && (
+            <div style={{ marginTop: 10 }}>
+              <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>SPL tokens</div>
+              {tokens.map((t) => (
+                <div
+                  key={t.mint}
+                  style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 13, padding: "3px 0" }}
+                >
+                  <a
+                    href={`https://explorer.solana.com/address/${t.mint}?cluster=devnet`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ fontFamily: "var(--mono)", wordBreak: "break-all" }}
+                    title={t.mint}
+                  >
+                    {t.mint.slice(0, 4)}…{t.mint.slice(-4)}
+                  </a>
+                  <strong style={{ whiteSpace: "nowrap" }}>{t.amount}</strong>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button onClick={refresh} disabled={loading} style={btn(false)}>
+            <button onClick={() => refresh()} disabled={loading} style={btn(false)}>
               Refresh
             </button>
             <a
